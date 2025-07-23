@@ -13,6 +13,7 @@ const selectAllCheckbox = document.getElementById('selectAllCheckbox');
 const selectAllBtn = document.getElementById('selectAllBtn');
 const deselectAllBtn = document.getElementById('deselectAllBtn');
 const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+const exportExcelBtn = document.getElementById('exportExcelBtn');
 const sendBtn = document.getElementById('sendBtn');
 const messageContainer = document.getElementById('messageContainer');
 const clientsGrid = document.getElementById('clientsGrid');
@@ -39,6 +40,7 @@ function initializeEventListeners() {
     selectAllBtn.addEventListener('click', () => toggleAllCheckboxes(true));
     deselectAllBtn.addEventListener('click', () => toggleAllCheckboxes(false));
     deleteSelectedBtn.addEventListener('click', handleDeleteSelected);
+    exportExcelBtn.addEventListener('click', handleExportExcel);
     sendBtn.addEventListener('click', handleSendResults);
 }
 
@@ -490,6 +492,123 @@ async function handleSendResults() {
         sendBtn.disabled = false;
         sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span>Invia Risultati Filtrati</span>';
     }
+}
+
+// Handle Excel export
+function handleExportExcel() {
+    if (filteredLeads.length === 0) {
+        showMessage(CONFIG.messages.noLeadsToExport, 'error');
+        return;
+    }
+    
+    try {
+        exportExcelBtn.disabled = true;
+        exportExcelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Esportazione...</span>';
+        
+        showMessage('Preparazione file Excel in corso...', 'info');
+        
+        // Prepare data for Excel export
+        const excelData = prepareExcelData();
+        
+        // Create workbook and worksheet
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(excelData, {
+            header: CONFIG.excel.columns.map(col => col.header)
+        });
+        
+        // Set column widths
+        const colWidths = CONFIG.excel.columns.map(col => ({ wch: col.width }));
+        ws['!cols'] = colWidths;
+        
+        // Style header row
+        const headerRange = XLSX.utils.decode_range(ws['!ref']);
+        for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+            if (ws[cellAddress]) {
+                ws[cellAddress].s = {
+                    font: { bold: true, color: { rgb: "FFFFFF" } },
+                    fill: { fgColor: { rgb: "4F46E5" } },
+                    alignment: { horizontal: "center" }
+                };
+            }
+        }
+        
+        // Add worksheet to workbook
+        XLSX.utils.book_append_sheet(wb, ws, CONFIG.excel.sheetName);
+        
+        // Generate filename
+        const timestamp = CONFIG.excel.includeTimestamp ? 
+            `_${new Date().toLocaleDateString('it-IT').replace(/\//g, '-')}_${new Date().toLocaleTimeString('it-IT', { hour12: false }).replace(/:/g, '-')}` : 
+            '';
+        const clientSuffix = selectedClient ? `_${selectedClient.name.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+        const filename = `${CONFIG.excel.filename}${clientSuffix}${timestamp}.xlsx`;
+        
+        // Save file
+        XLSX.writeFile(wb, filename);
+        
+        showMessage(CONFIG.messages.exportSuccess(filteredLeads.length, filename), 'success');
+        
+        // Add success animation
+        exportExcelBtn.classList.add('success-pulse');
+        setTimeout(() => {
+            exportExcelBtn.classList.remove('success-pulse');
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Error exporting Excel:', error);
+        showMessage(CONFIG.messages.exportError(error.message), 'error');
+    } finally {
+        exportExcelBtn.disabled = false;
+        exportExcelBtn.innerHTML = '<i class="fas fa-file-excel"></i><span>Esporta Excel</span>';
+    }
+}
+
+// Prepare data for Excel export
+function prepareExcelData() {
+    return filteredLeads.map(lead => {
+        const rowData = {};
+        
+        CONFIG.excel.columns.forEach(col => {
+            let value = lead[col.key] || '';
+            
+            // Format specific fields
+            switch (col.key) {
+                case 'estimated_num_employees':
+                    value = value ? parseInt(value).toLocaleString('it-IT') : '';
+                    break;
+                case 'organization_annual_revenue':
+                    if (value) {
+                        const num = parseInt(value);
+                        value = !isNaN(num) ? num.toLocaleString('it-IT', {
+                            style: 'currency',
+                            currency: 'EUR',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                        }) : '';
+                    }
+                    break;
+                case 'keywords':
+                    // Limit keywords length for better readability
+                    if (value && value.length > 200) {
+                        value = value.substring(0, 200) + '...';
+                    }
+                    break;
+                case 'organization_seo_description':
+                    // Limit description length
+                    if (value && value.length > 300) {
+                        value = value.substring(0, 300) + '...';
+                    }
+                    break;
+                default:
+                    // Clean HTML and normalize text
+                    value = value.toString().replace(/<[^>]*>/g, '').trim();
+            }
+            
+            rowData[col.header] = value;
+        });
+        
+        return rowData;
+    });
 }
 
 // Show message
