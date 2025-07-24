@@ -10,20 +10,20 @@ const CONFIG = {
     clients: [
         {
             id: 'client1',
-            name: 'Azienda Alpha S.r.l.',
-            description: 'Settore tecnologico e consulenza IT',
+            name: 'Queen',
+            description: 'Sviluppo software',
             active: true
         },
         {
             id: 'client2',
-            name: 'Beta Corporation',
-            description: 'Servizi digitali e marketing',
+            name: 'OBLY',
+            description: 'Digital Lab & sviluppo software',
             active: true
         },
         {
             id: 'client3',
-            name: 'Gamma Industries',
-            description: 'Produzione e distribuzione',
+            name: 'Genhine Way',
+            description: 'Blockchain per la tracciabilità e la sostenibilità',
             active: true
         }
         // Aggiungi altri clienti qui quando necessario
