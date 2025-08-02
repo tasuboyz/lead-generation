@@ -94,6 +94,29 @@
                 </div>
             </div>
             
+            <!-- Search and Filter Controls -->
+            <div class="filter-controls">
+                <div class="search-container">
+                    <div class="search-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="globalSearch" placeholder="Cerca in tutti i campi..." class="global-search">
+                        <button id="clearSearch" class="clear-search-btn" style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button id="clearFiltersBtn" class="filter-btn">
+                        <i class="fas fa-filter-circle-xmark"></i>
+                        Cancella Filtri
+                    </button>
+                    <button id="toggleFiltersBtn" class="filter-btn">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>Mostra Filtri</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="table-container">
                 <table id="leadsTable" class="leads-table">
                     <thead>
@@ -101,15 +124,112 @@
                             <th class="select-column">
                                 <input type="checkbox" id="selectAllCheckbox">
                             </th>
-                            <th>Nome</th>
-                            <th>Cognome</th>
-                            <th>Azienda</th>
-                            <th>Email</th>
-                            <th>Ruolo</th>
-                            <th>LinkedIn</th>
-                            <th>Settore</th>
-                            <th>Dipendenti</th>
-                            <th>Fatturato</th>
+                            <th class="sortable-header" data-column="first_name">
+                                <span>Nome</span>
+                                <div class="sort-controls">
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th class="sortable-header" data-column="last_name">
+                                <span>Cognome</span>
+                                <div class="sort-controls">
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th class="sortable-header" data-column="organization_name">
+                                <span>Azienda</span>
+                                <div class="sort-controls">
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th class="sortable-header" data-column="email">
+                                <span>Email</span>
+                                <div class="sort-controls">
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th class="sortable-header" data-column="headline">
+                                <span>Ruolo</span>
+                                <div class="sort-controls">
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th class="sortable-header" data-column="linkedin_url">
+                                <span>LinkedIn</span>
+                                <div class="sort-controls">
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th class="sortable-header" data-column="industry">
+                                <span>Settore</span>
+                                <div class="sort-controls">
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th class="sortable-header numeric-header" data-column="estimated_num_employees">
+                                <span>Dipendenti</span>
+                                <div class="sort-controls">
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th class="sortable-header numeric-header" data-column="organization_annual_revenue">
+                                <span>Fatturato</span>
+                                <div class="sort-controls">
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                        </tr>
+                        <tr class="filter-row" id="filterRow" style="display: none;">
+                            <th class="filter-cell"></th>
+                            <th class="filter-cell">
+                                <select class="column-filter" data-column="first_name">
+                                    <option value="">Tutti</option>
+                                </select>
+                            </th>
+                            <th class="filter-cell">
+                                <select class="column-filter" data-column="last_name">
+                                    <option value="">Tutti</option>
+                                </select>
+                            </th>
+                            <th class="filter-cell">
+                                <select class="column-filter" data-column="organization_name">
+                                    <option value="">Tutti</option>
+                                </select>
+                            </th>
+                            <th class="filter-cell">
+                                <select class="column-filter" data-column="email">
+                                    <option value="">Tutti</option>
+                                </select>
+                            </th>
+                            <th class="filter-cell">
+                                <select class="column-filter" data-column="headline">
+                                    <option value="">Tutti</option>
+                                </select>
+                            </th>
+                            <th class="filter-cell">
+                                <select class="column-filter" data-column="linkedin_url">
+                                    <option value="">Tutti</option>
+                                    <option value="has_linkedin">Con LinkedIn</option>
+                                    <option value="no_linkedin">Senza LinkedIn</option>
+                                </select>
+                            </th>
+                            <th class="filter-cell">
+                                <select class="column-filter" data-column="industry">
+                                    <option value="">Tutti</option>
+                                </select>
+                            </th>
+                            <th class="filter-cell">
+                                <div class="range-filter">
+                                    <input type="number" class="range-input" data-column="estimated_num_employees" data-type="min" placeholder="Min">
+                                    <input type="number" class="range-input" data-column="estimated_num_employees" data-type="max" placeholder="Max">
+                                </div>
+                            </th>
+                            <th class="filter-cell">
+                                <div class="range-filter">
+                                    <input type="number" class="range-input" data-column="organization_annual_revenue" data-type="min" placeholder="Min €">
+                                    <input type="number" class="range-input" data-column="organization_annual_revenue" data-type="max" placeholder="Max €">
+                                </div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="leadsTableBody">

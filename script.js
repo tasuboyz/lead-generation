@@ -2,6 +2,9 @@
 let leadsData = [];
 let filteredLeads = [];
 let selectedClient = null;
+let currentSort = { column: null, direction: null };
+let columnFilters = {};
+let globalSearchTerm = '';
 
 // DOM elements
 const apolloUrlInput = document.getElementById('apolloUrl');
@@ -19,6 +22,13 @@ const messageContainer = document.getElementById('messageContainer');
 const clientsGrid = document.getElementById('clientsGrid');
 const selectedClientInfo = document.getElementById('selectedClientInfo');
 const selectedClientName = document.getElementById('selectedClientName');
+
+// New filter elements
+const globalSearch = document.getElementById('globalSearch');
+const clearSearchBtn = document.getElementById('clearSearch');
+const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
+const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+const filterRow = document.getElementById('filterRow');
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -42,6 +52,12 @@ function initializeEventListeners() {
     deleteSelectedBtn.addEventListener('click', handleDeleteSelected);
     exportExcelBtn.addEventListener('click', handleExportExcel);
     sendBtn.addEventListener('click', handleSendResults);
+    
+    // Filter and search event listeners
+    globalSearch.addEventListener('input', debounce(handleGlobalSearch, 300));
+    clearSearchBtn.addEventListener('click', clearGlobalSearch);
+    toggleFiltersBtn.addEventListener('click', toggleFilters);
+    clearFiltersBtn.addEventListener('click', clearAllFilters);
 }
 
 // Initialize clients from config
@@ -190,6 +206,12 @@ async function handleFetchLeads() {
         leadsData = data;
         filteredLeads = [...data];
         
+        // Initialize table controls and filters
+        setTimeout(() => {
+            initializeTableControls();
+            updateFilterOptions();
+        }, 100);
+        
         displayResults();
         showMessage(CONFIG.messages.fetchSuccess(data.length), 'success');
         
@@ -233,18 +255,320 @@ function setLoadingState(isLoading) {
     }
 }
 
+// ====== FILTERING AND SORTING FUNCTIONS ======
+
+// Handle global search
+function handleGlobalSearch(e) {
+    globalSearchTerm = e.target.value.toLowerCase().trim();
+    clearSearchBtn.style.display = globalSearchTerm ? 'block' : 'none';
+    applyFiltersAndSort();
+}
+
+// Clear global search
+function clearGlobalSearch() {
+    globalSearch.value = '';
+    globalSearchTerm = '';
+    clearSearchBtn.style.display = 'none';
+    applyFiltersAndSort();
+}
+
+// Toggle filter row visibility
+function toggleFilters() {
+    const isVisible = filterRow.style.display !== 'none';
+    filterRow.style.display = isVisible ? 'none' : 'table-row';
+    
+    const btn = toggleFiltersBtn;
+    const span = btn.querySelector('span');
+    const icon = btn.querySelector('i');
+    
+    if (isVisible) {
+        span.textContent = 'Mostra Filtri';
+        icon.className = 'fas fa-sliders-h';
+        btn.classList.remove('active');
+    } else {
+        span.textContent = 'Nascondi Filtri';
+        icon.className = 'fas fa-eye-slash';
+        btn.classList.add('active');
+    }
+}
+
+// Clear all filters
+function clearAllFilters() {
+    // Clear global search
+    clearGlobalSearch();
+    
+    // Clear column filters
+    columnFilters = {};
+    document.querySelectorAll('.column-filter').forEach(filter => {
+        filter.value = '';
+        filter.classList.remove('active');
+    });
+    
+    // Clear range filters
+    document.querySelectorAll('.range-input').forEach(input => {
+        input.value = '';
+        input.classList.remove('active');
+    });
+    
+    // Clear sort
+    currentSort = { column: null, direction: null };
+    document.querySelectorAll('.sortable-header').forEach(header => {
+        header.classList.remove('sort-asc', 'sort-desc');
+    });
+    
+    applyFiltersAndSort();
+    showMessage('Tutti i filtri sono stati cancellati', 'info');
+}
+
+// Initialize sorting and filtering for table
+function initializeTableControls() {
+    // Add click event to sortable headers
+    document.querySelectorAll('.sortable-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const column = header.dataset.column;
+            handleSort(column);
+        });
+    });
+    
+    // Add change events to column filters
+    document.querySelectorAll('.column-filter').forEach(filter => {
+        filter.addEventListener('change', (e) => {
+            const column = e.target.dataset.column;
+            const value = e.target.value;
+            
+            if (value === '') {
+                delete columnFilters[column];
+                e.target.classList.remove('active');
+            } else {
+                columnFilters[column] = value;
+                e.target.classList.add('active');
+            }
+            
+            applyFiltersAndSort();
+        });
+    });
+    
+    // Add change events to range filters
+    document.querySelectorAll('.range-input').forEach(input => {
+        input.addEventListener('input', debounce((e) => {
+            const column = e.target.dataset.column;
+            const type = e.target.dataset.type; // 'min' or 'max'
+            const value = e.target.value;
+            
+            if (!columnFilters[column]) {
+                columnFilters[column] = {};
+            }
+            
+            if (value === '') {
+                delete columnFilters[column][type];
+                e.target.classList.remove('active');
+                
+                // If both min and max are empty, remove the column filter entirely
+                if (Object.keys(columnFilters[column]).length === 0) {
+                    delete columnFilters[column];
+                }
+            } else {
+                columnFilters[column][type] = parseFloat(value);
+                e.target.classList.add('active');
+            }
+            
+            applyFiltersAndSort();
+        }, 500));
+    });
+}
+
+// Handle sorting
+function handleSort(column) {
+    if (currentSort.column === column) {
+        // Toggle sort direction
+        if (currentSort.direction === 'asc') {
+            currentSort.direction = 'desc';
+        } else if (currentSort.direction === 'desc') {
+            currentSort = { column: null, direction: null };
+        } else {
+            currentSort.direction = 'asc';
+        }
+    } else {
+        currentSort = { column, direction: 'asc' };
+    }
+    
+    // Update UI
+    updateSortUI();
+    
+    // Apply sorting
+    applyFiltersAndSort();
+}
+
+// Update sort UI indicators
+function updateSortUI() {
+    document.querySelectorAll('.sortable-header').forEach(header => {
+        header.classList.remove('sort-asc', 'sort-desc');
+        
+        if (header.dataset.column === currentSort.column) {
+            if (currentSort.direction === 'asc') {
+                header.classList.add('sort-asc');
+            } else if (currentSort.direction === 'desc') {
+                header.classList.add('sort-desc');
+            }
+        }
+    });
+}
+
+// Apply all filters and sorting
+function applyFiltersAndSort() {
+    if (!leadsData || leadsData.length === 0) return;
+    
+    // Start with all data
+    let result = [...leadsData];
+    
+    // Apply global search
+    if (globalSearchTerm) {
+        result = result.filter(lead => {
+            const searchableText = [
+                lead.first_name,
+                lead.last_name,
+                lead.organization_name,
+                lead.email,
+                lead.headline,
+                lead.industry,
+                lead.organization_website_url
+            ].join(' ').toLowerCase();
+            
+            return searchableText.includes(globalSearchTerm);
+        });
+    }
+    
+    // Apply column filters
+    Object.keys(columnFilters).forEach(column => {
+        const filterValue = columnFilters[column];
+        
+        if (typeof filterValue === 'string') {
+            // Dropdown filter
+            result = result.filter(lead => {
+                const cellValue = (lead[column] || '').toString().toLowerCase();
+                
+                // Special cases for LinkedIn filter
+                if (column === 'linkedin_url') {
+                    if (filterValue === 'has_linkedin') {
+                        return lead.linkedin_url && lead.linkedin_url !== 'N/A';
+                    } else if (filterValue === 'no_linkedin') {
+                        return !lead.linkedin_url || lead.linkedin_url === 'N/A';
+                    }
+                }
+                
+                return cellValue.includes(filterValue.toLowerCase());
+            });
+        } else if (typeof filterValue === 'object') {
+            // Range filter
+            result = result.filter(lead => {
+                const cellValue = parseFloat(lead[column]) || 0;
+                const min = filterValue.min;
+                const max = filterValue.max;
+                
+                let passes = true;
+                if (min !== undefined && cellValue < min) passes = false;
+                if (max !== undefined && cellValue > max) passes = false;
+                
+                return passes;
+            });
+        }
+    });
+    
+    // Apply sorting
+    if (currentSort.column && currentSort.direction) {
+        result.sort((a, b) => {
+            const aVal = a[currentSort.column] || '';
+            const bVal = b[currentSort.column] || '';
+            
+            // Check if values are numeric
+            const aNum = parseFloat(aVal);
+            const bNum = parseFloat(bVal);
+            
+            let comparison = 0;
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                // Numeric comparison
+                comparison = aNum - bNum;
+            } else {
+                // String comparison
+                comparison = aVal.toString().localeCompare(bVal.toString(), 'it', { 
+                    numeric: true, 
+                    caseFirst: 'lower' 
+                });
+            }
+            
+            return currentSort.direction === 'asc' ? comparison : -comparison;
+        });
+    }
+    
+    // Update filtered data
+    filteredLeads = result;
+    
+    // Re-render table
+    displayResults();
+    
+    // Update filter options
+    updateFilterOptions();
+}
+
+// Update filter dropdown options based on current data
+function updateFilterOptions() {
+    const columns = ['first_name', 'last_name', 'organization_name', 'email', 'headline', 'industry'];
+    
+    columns.forEach(column => {
+        const filter = document.querySelector(`.column-filter[data-column="${column}"]`);
+        if (!filter) return;
+        
+        // Get unique values for this column
+        const uniqueValues = [...new Set(
+            leadsData
+                .map(lead => lead[column])
+                .filter(value => value && value !== 'N/A')
+                .map(value => value.toString().trim())
+        )].sort();
+        
+        // Save current value
+        const currentValue = filter.value;
+        
+        // Clear options except "Tutti"
+        filter.innerHTML = '<option value="">Tutti</option>';
+        
+        // Add unique values as options
+        uniqueValues.forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            filter.appendChild(option);
+        });
+        
+        // Restore current value if it still exists
+        if (currentValue && uniqueValues.includes(currentValue)) {
+            filter.value = currentValue;
+        }
+    });
+}
+
 // Display results in table
 function displayResults() {
+    const tableContainer = document.querySelector('.table-container');
+    
     if (filteredLeads.length === 0) {
+        const isFiltered = globalSearchTerm || Object.keys(columnFilters).length > 0;
+        const emptyMessage = isFiltered ? 
+            'Nessun lead corrisponde ai filtri applicati' : 
+            'Nessun lead da visualizzare';
+        
         leadsTableBody.innerHTML = `
             <tr>
                 <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                    <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
-                    Nessun lead da visualizzare
+                    <i class="fas fa-${isFiltered ? 'filter' : 'inbox'}" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                    ${emptyMessage}
+                    ${isFiltered ? '<div style="margin-top: 10px;"><button class="filter-btn" onclick="clearAllFilters()">Cancella Filtri</button></div>' : ''}
                 </td>
             </tr>
         `;
         resultsSection.style.display = 'block';
+        updateResultsHeader();
         return;
     }
     
@@ -257,13 +581,46 @@ function displayResults() {
     
     resultsSection.style.display = 'block';
     updateSelectAllState();
+    updateResultsHeader();
+    
+    // Add table update animation
+    tableContainer.classList.add('table-updated');
+    setTimeout(() => {
+        tableContainer.classList.remove('table-updated');
+    }, 300);
     
     // Add stagger animation to rows
     const rows = leadsTableBody.querySelectorAll('tr');
     rows.forEach((row, index) => {
-        row.style.animationDelay = `${index * 0.05}s`;
+        row.style.animationDelay = `${index * 0.02}s`;
         row.classList.add('fade-in-row');
     });
+}
+
+// Update results header with count information
+function updateResultsHeader() {
+    const header = document.querySelector('.results-header h2');
+    if (!header) return;
+    
+    const totalCount = leadsData.length;
+    const filteredCount = filteredLeads.length;
+    const isFiltered = totalCount !== filteredCount;
+    
+    const countText = isFiltered ? 
+        `Risultati Lead Generation (${filteredCount} di ${totalCount})` :
+        `Risultati Lead Generation (${totalCount})`;
+    
+    header.innerHTML = `
+        <i class="fas fa-table"></i>
+        ${countText}
+    `;
+    
+    // Add filter indicator
+    if (isFiltered) {
+        header.style.color = 'var(--accent-primary)';
+    } else {
+        header.style.color = 'var(--text-primary)';
+    }
 }
 
 // Create lead row
@@ -706,6 +1063,24 @@ window.addEventListener('unhandledrejection', function(event) {
     console.error('Unhandled promise rejection:', event.reason);
     showMessage(CONFIG.messages.unexpectedError, 'error');
 });
+
+// Show filter statistics
+function showFilterStats() {
+    const totalFilters = Object.keys(columnFilters).length + (globalSearchTerm ? 1 : 0);
+    if (totalFilters === 0) return;
+    
+    let message = `Filtri applicati: ${totalFilters}`;
+    
+    if (globalSearchTerm) {
+        message += ` | Ricerca: "${globalSearchTerm}"`;
+    }
+    
+    if (Object.keys(columnFilters).length > 0) {
+        message += ` | Colonne filtrate: ${Object.keys(columnFilters).length}`;
+    }
+    
+    showMessage(message, 'info');
+}
 
 // Performance optimization: debounce search if we add real-time filtering later
 function debounce(func, wait) {
