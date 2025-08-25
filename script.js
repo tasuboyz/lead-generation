@@ -30,6 +30,24 @@ const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
 const clearFiltersBtn = document.getElementById('clearFiltersBtn');
 const filterRow = document.getElementById('filterRow');
 
+// New Query Builder elements
+const qbTitles = document.getElementById('qbTitles');
+const qbIndustry = document.getElementById('qbIndustry');
+const qbLocation = document.getElementById('qbLocation');
+// employee range checkboxes
+const qbEmployeeRanges = document.getElementById('qbEmployeeRanges'); // kept for backward compatibility if present
+// We'll also read the checkbox group by class
+const qbHasEmail = document.getElementById('qbHasEmail');
+const qbHasLinkedIn = document.getElementById('qbHasLinkedIn');
+const qbKeywords = document.getElementById('qbKeywords');
+const qbCompany = document.getElementById('qbCompany');
+const qbMinRevenue = document.getElementById('qbMinRevenue');
+const qbMaxRevenue = document.getElementById('qbMaxRevenue');
+const qbMarketSegments = document.getElementById('qbMarketSegments');
+const previewUrlBtn = document.getElementById('previewUrlBtn');
+const qbPreview = document.getElementById('qbPreview');
+const qbQKeywords = document.getElementById('qbQKeywords');
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     initializeEventListeners();
@@ -40,11 +58,27 @@ document.addEventListener('DOMContentLoaded', function() {
 // Event listeners
 function initializeEventListeners() {
     fetchBtn.addEventListener('click', handleFetchLeads);
-    apolloUrlInput.addEventListener('keypress', function(e) {
+    apolloUrlInput && apolloUrlInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             handleFetchLeads();
         }
     });
+
+    // Preview URL button
+    if (previewUrlBtn) {
+        previewUrlBtn.addEventListener('click', function() {
+            const filters = readQueryBuilderFilters();
+            if (typeof window.buildApolloUrl === 'function') {
+                const url = window.buildApolloUrl(filters);
+                qbPreview.style.display = 'block';
+                qbPreview.textContent = url;
+            } else {
+                qbPreview.style.display = 'block';
+                qbPreview.textContent = 'URL builder non disponibile. Assicurati che src/urlBuilder.js sia caricato.';
+                showMessage('URL builder non disponibile', 'error');
+            }
+        });
+    }
     
     selectAllCheckbox.addEventListener('change', handleSelectAll);
     selectAllBtn.addEventListener('click', () => toggleAllCheckboxes(true));
@@ -163,58 +197,93 @@ function addWowEffects() {
 
 // Handle fetch leads
 async function handleFetchLeads() {
-    const apolloUrl = apolloUrlInput.value.trim();
-    
+    // Build URL from filters
+    const filters = readQueryBuilderFilters();
+    const apolloUrl = (typeof window.buildApolloUrl === 'function') ? window.buildApolloUrl(filters) : (apolloUrlInput ? apolloUrlInput.value.trim() : '');
+
     if (!apolloUrl) {
-        showMessage('Inserisci un URL Apollo.io valido', 'error');
+        showMessage('Configura i filtri per generare l\'URL Apollo', 'error');
         return;
     }
-    
+
     if (!isValidApolloUrl(apolloUrl)) {
         showMessage(CONFIG.messages.invalidApolloUrl, 'error');
         return;
     }
-    
+
     // Check if client is selected (if required)
     if (CONFIG.ui.requireClientSelection && !selectedClient) {
         showMessage(CONFIG.messages.noClientSelected, 'error');
         return;
     }
-    
+
     try {
         setLoadingState(true);
         showMessage('Recupero leads in corso...', 'info');
-        
+
         const response = await fetch(CONFIG.endpoints.fetchLeads, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'text/plain; charset=utf-8',
             },
-            body: JSON.stringify(apolloUrl)
+            body: apolloUrl
         });
-        
+
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errText = await response.text().catch(() => null);
+            throw new Error(`HTTP error! status: ${response.status}${errText ? ' - ' + errText : ''}`);
         }
+
+        // Safely handle empty or invalid JSON responses
+        const rawText = await response.text();
         
-        const data = await response.json();
-        
+        // If server returned empty body -> show empty results in the UI (not an exception)
+        if (!rawText) {
+            leadsData = [];
+            filteredLeads = [];
+            // Ensure table controls are initialized/cleared
+            setTimeout(() => {
+                initializeTableControls();
+                updateFilterOptions();
+            }, 50);
+            displayResults();
+            showMessage('Nessun lead trovato per questi filtri', 'info');
+            return;
+        }
+
+        let data;
+        try {
+            data = JSON.parse(rawText);
+        } catch (err) {
+            // Invalid JSON -> treat as server error
+            throw new Error(`Invalid JSON response from server: ${err.message}`);
+        }
+
+        // If parsed but not an array or empty array -> show empty results UI
         if (!Array.isArray(data) || data.length === 0) {
-            throw new Error('Nessun lead trovato per questo URL');
+            leadsData = [];
+            filteredLeads = [];
+            setTimeout(() => {
+                initializeTableControls();
+                updateFilterOptions();
+            }, 50);
+            displayResults();
+            showMessage('Nessun lead trovato per questi filtri', 'info');
+            return;
         }
-        
+
         leadsData = data;
         filteredLeads = [...data];
-        
+
         // Initialize table controls and filters
         setTimeout(() => {
             initializeTableControls();
             updateFilterOptions();
         }, 100);
-        
+
         displayResults();
         showMessage(CONFIG.messages.fetchSuccess(data.length), 'success');
-        
+
         // Smooth scroll to results
         setTimeout(() => {
             resultsSection.scrollIntoView({ 
@@ -222,7 +291,7 @@ async function handleFetchLeads() {
                 block: 'start'
             });
         }, 300);
-        
+
     } catch (error) {
         console.error('Error fetching leads:', error);
         showMessage(CONFIG.messages.fetchError(error.message), 'error');
@@ -1092,5 +1161,39 @@ function debounce(func, wait) {
         };
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
+    };
+}
+
+// Read filters from Query Builder UI
+function readQueryBuilderFilters() {
+    const titlesRaw = qbTitles ? qbTitles.value : '';
+    const titles = titlesRaw ? titlesRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+    const marketRaw = qbMarketSegments ? qbMarketSegments.value : '';
+    const marketSegments = marketRaw ? marketRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+    // Read selected employee range checkboxes (class .qbEmployeeRange)
+    let employeeRanges = [];
+    document.querySelectorAll('.qbEmployeeRange:checked').forEach(cb => {
+        const parts = String(cb.value).split(',').map(p => p.trim());
+        if (parts.length === 2 && parts[0] && parts[1]) {
+            employeeRanges.push({ min: parseInt(parts[0], 10), max: parseInt(parts[1], 10) });
+        }
+    });
+
+    return {
+        titles,
+        industry: qbIndustry ? qbIndustry.value.trim() : '',
+        location: qbLocation ? qbLocation.value.trim() : '',
+        company: qbCompany ? qbCompany.value.trim() : '',
+        marketSegments,
+        minRevenue: qbMinRevenue && qbMinRevenue.value ? parseInt(qbMinRevenue.value) : undefined,
+        maxRevenue: qbMaxRevenue && qbMaxRevenue.value ? parseInt(qbMaxRevenue.value) : undefined,
+        hasEmail: qbHasEmail ? qbHasEmail.checked : undefined,
+        hasLinkedIn: qbHasLinkedIn ? qbHasLinkedIn.checked : undefined,
+        keywords: qbKeywords ? qbKeywords.value.trim() : '',
+        qKeywords: qbQKeywords ? qbQKeywords.value.trim() : '',
+        results: undefined,
+        employeeRanges,
     };
 }

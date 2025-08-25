@@ -1,9 +1,18 @@
 // Configurazione centralizzata dell'applicazione
 const CONFIG = {
-    // Endpoints API
+    // Endpoints API (calls directly n8n webhooks)
     endpoints: {
         fetchLeads: 'https://edinthor.app.n8n.cloud/webhook/result',
         sendLeads: 'https://edinthor.app.n8n.cloud/webhook/send'
+    },
+
+    // Feature flags
+    features: {
+        companyLookalikes: false,
+        aiFilters: false,
+        buyingIntent: false,
+        emailTracking: false,
+        marketSegments: true
     },
     
     // Lista clienti aziendali
@@ -27,18 +36,13 @@ const CONFIG = {
             active: true
         }
         // Aggiungi altri clienti qui quando necessario
-        // {
-        //     id: 'client4',
-        //     name: 'Delta Solutions',
-        //     description: 'Servizi finanziari',
-        //     active: false
-        // }
     ],
     
     // Impostazioni UI
     ui: {
         defaultClient: null, // null = nessuna selezione di default
         requireClientSelection: true, // true = obbligatoria la selezione del cliente
+        enableQueryPreview: true, // true = abilita anteprima query builder
         animations: {
             duration: 300,
             staggerDelay: 50
@@ -58,8 +62,8 @@ const CONFIG = {
         noLeadsToExport: 'Nessun lead da esportare',
         invalidApolloUrl: 'URL Apollo.io non valido',
         fetchError: (error) => `Errore nel recupero leads: ${error}`,
-        sendError: (error) => `Errore nell'invio: ${error}`,
-        exportError: (error) => `Errore nell'esportazione: ${error}`,
+        sendError: (error) => `Errore nell\'invio: ${error}`,
+        exportError: (error) => `Errore nell\'esportazione: ${error}`,
         unexpectedError: 'Si è verificato un errore imprevisto'
     },
     
@@ -88,7 +92,7 @@ const CONFIG = {
     }
 };
 
-// Esporta la configurazione per l'uso in altri file
+// Esporta la configurazione per l'uso in altri file (Node)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;
 }

@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lead Generation Tool</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles/query-builder.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="config.js"></script>
+    <script src="src/urlBuilder.js"></script>
 </head>
 <body>
     <div class="container">
@@ -40,21 +42,60 @@
 
             <!-- Apollo URL Input -->
             <div class="input-container">
-                <label for="apolloUrl" class="input-label">
+                <label class="input-label">
                     <i class="fab fa-apollo"></i>
-                    URL Apollo.io
+                    Query Builder Apollo
                 </label>
-                <div class="input-wrapper">
-                    <input 
-                        type="url" 
-                        id="apolloUrl" 
-                        placeholder="Incolla qui l'URL di Apollo.io (es: https://app.apollo.io/#/people?personTitles[]=it%20manager...)"
-                        class="url-input"
-                    >
-                    <button id="fetchBtn" class="fetch-btn">
-                        <i class="fas fa-search"></i>
-                        <span>Cerca Leads</span>
-                    </button>
+                <div class="query-builder">
+                    <div class="query-row">
+                        <label>Titoli (comma separated)</label>
+                        <input type="text" id="qbTitles" placeholder="es: IT Manager, CTO" />
+                    </div>
+                    <div class="query-row">
+                        <label>Settore</label>
+                        <input type="text" id="qbIndustry" placeholder="es: Information Technology" />
+                    </div>
+                    <div class="query-row">
+                        <label>Località</label>
+                        <input type="text" id="qbLocation" placeholder="es: Italy, Milan" />
+                    </div>
+                    <div class="query-row">
+                        <label>Employee Ranges (es: 51-100,101-200)</label>
+                        <input type="text" id="qbEmployeeRanges" placeholder="es: 51-100,101-200" />
+                    </div>
+                    <div class="query-row">
+                        <label>Preferenze</label>
+                        <label><input type="checkbox" id="qbHasEmail" /> Solo con Email</label>
+                        <label><input type="checkbox" id="qbHasLinkedIn" /> Solo con LinkedIn</label>
+                    </div>
+                    <div class="query-row">
+                        <label>Keywords</label>
+                        <input type="text" id="qbKeywords" placeholder="es: cloud, saas" />
+                    </div>
+                    <div class="query-row">
+                        <label>Azienda (Company)</label>
+                        <input type="text" id="qbCompany" placeholder="Nome azienda es: Acme Srl" />
+                    </div>
+                    <div class="query-row range-row">
+                        <label>Fatturato Azienda (min / max €)</label>
+                        <input type="number" id="qbMinRevenue" placeholder="Min €" />
+                        <input type="number" id="qbMaxRevenue" placeholder="Max €" />
+                    </div>
+                    <div class="query-row">
+                        <label>Market Segments (comma separated)</label>
+                        <input type="text" id="qbMarketSegments" placeholder="es: fintech, healthcare" />
+                    </div>
+                    <div class="query-actions">
+                        <button id="previewUrlBtn" class="action-btn">
+                            <i class="fas fa-eye"></i>
+                            Anteprima URL
+                        </button>
+                        <button id="fetchBtn" class="fetch-btn">
+                            <i class="fas fa-search"></i>
+                            <span>Cerca Leads</span>
+                        </button>
+                    </div>
+                    <div id="qbPreview" class="qb-preview" style="display:none; margin-top:8px; font-size:0.9rem; color:var(--text-secondary);"></div>
                 </div>
             </div>
         </section>
