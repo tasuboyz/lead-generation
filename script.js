@@ -221,45 +221,9 @@ async function handleFetchLeads() {
         setLoadingState(true);
         showMessage('Recupero leads in corso...', 'info');
 
-        const response = await fetch(CONFIG.endpoints.fetchLeads, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain; charset=utf-8',
-            },
-            body: apolloUrl
-        });
+        // Delegate network call to apiClient
+        const data = await window.apiClient.fetchLeads(apolloUrl);
 
-        if (!response.ok) {
-            const errText = await response.text().catch(() => null);
-            throw new Error(`HTTP error! status: ${response.status}${errText ? ' - ' + errText : ''}`);
-        }
-
-        // Safely handle empty or invalid JSON responses
-        const rawText = await response.text();
-        
-        // If server returned empty body -> show empty results in the UI (not an exception)
-        if (!rawText) {
-            leadsData = [];
-            filteredLeads = [];
-            // Ensure table controls are initialized/cleared
-            setTimeout(() => {
-                initializeTableControls();
-                updateFilterOptions();
-            }, 50);
-            displayResults();
-            showMessage('Nessun lead trovato per questi filtri', 'info');
-            return;
-        }
-
-        let data;
-        try {
-            data = JSON.parse(rawText);
-        } catch (err) {
-            // Invalid JSON -> treat as server error
-            throw new Error(`Invalid JSON response from server: ${err.message}`);
-        }
-
-        // If parsed but not an array or empty array -> show empty results UI
         if (!Array.isArray(data) || data.length === 0) {
             leadsData = [];
             filteredLeads = [];
@@ -273,7 +237,6 @@ async function handleFetchLeads() {
         }
 
         leadsData = data;
-        filteredLeads = [...data];
 
         // Initialize table controls and filters
         setTimeout(() => {
@@ -889,19 +852,7 @@ async function handleSendResults() {
             totalCount: filteredLeads.length
         };
         
-        const response = await fetch(CONFIG.endpoints.sendLeads, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(dataToSend)
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.text();
+        const result = await window.apiClient.sendLeads(dataToSend);
         
         showMessage(CONFIG.messages.sendSuccess(filteredLeads.length, selectedClient.name), 'success');
         
