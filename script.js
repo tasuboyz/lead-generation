@@ -34,9 +34,7 @@ const filterRow = document.getElementById('filterRow');
 const qbTitles = document.getElementById('qbTitles');
 const qbIndustry = document.getElementById('qbIndustry');
 const qbLocation = document.getElementById('qbLocation');
-// employee range checkboxes
-const qbEmployeeRanges = document.getElementById('qbEmployeeRanges'); // kept for backward compatibility if present
-// We'll also read the checkbox group by class
+// We'll read the employee range checkbox group by class (.qbEmployeeRange)
 const qbHasEmail = document.getElementById('qbHasEmail');
 const qbHasLinkedIn = document.getElementById('qbHasLinkedIn');
 const qbKeywords = document.getElementById('qbKeywords');
@@ -510,12 +508,28 @@ function applyFiltersAndSort() {
     // Apply column filters
     Object.keys(columnFilters).forEach(column => {
         const filterValue = columnFilters[column];
-        
+
+        if (column === 'estimated_num_employees') {
+            // Expect a string like "51-200" or "1001+" or empty
+            if (typeof filterValue === 'string' && filterValue) {
+                const range = parseEmployeeRange(filterValue);
+                if (range) {
+                    result = result.filter(lead => {
+                        const cellValue = parseFloat(lead[column]) || 0;
+                        if (range.min !== undefined && cellValue < range.min) return false;
+                        if (range.max !== undefined && cellValue > range.max) return false;
+                        return true;
+                    });
+                }
+            }
+            return; // continue to next filter
+        }
+
         if (typeof filterValue === 'string') {
             // Dropdown filter
             result = result.filter(lead => {
                 const cellValue = (lead[column] || '').toString().toLowerCase();
-                
+
                 // Special cases for LinkedIn filter
                 if (column === 'linkedin_url') {
                     if (filterValue === 'has_linkedin') {
@@ -524,7 +538,7 @@ function applyFiltersAndSort() {
                         return !lead.linkedin_url || lead.linkedin_url === 'N/A';
                     }
                 }
-                
+
                 return cellValue.includes(filterValue.toLowerCase());
             });
         } else if (typeof filterValue === 'object') {
@@ -533,11 +547,11 @@ function applyFiltersAndSort() {
                 const cellValue = parseFloat(lead[column]) || 0;
                 const min = filterValue.min;
                 const max = filterValue.max;
-                
+
                 let passes = true;
                 if (min !== undefined && cellValue < min) passes = false;
                 if (max !== undefined && cellValue > max) passes = false;
-                
+
                 return passes;
             });
         }
@@ -615,6 +629,25 @@ function updateFilterOptions() {
             filter.value = currentValue;
         }
     });
+}
+
+// Parse employee range string like "51-200" or "1001+" into {min, max}
+function parseEmployeeRange(rangeStr) {
+    if (!rangeStr) return null;
+    rangeStr = rangeStr.trim();
+    if (rangeStr.endsWith('+')) {
+        const min = parseInt(rangeStr.replace('+', ''), 10);
+        if (isNaN(min)) return null;
+        return { min, max: undefined };
+    }
+    const parts = rangeStr.split('-').map(p => p.trim());
+    if (parts.length === 2) {
+        const min = parseInt(parts[0], 10);
+        const max = parseInt(parts[1], 10);
+        if (isNaN(min) || isNaN(max)) return null;
+        return { min, max };
+    }
+    return null;
 }
 
 // Display results in table

@@ -87,6 +87,23 @@
             params.set('qKeywords', String(filters.company));
         }
 
+        // q_organization_keyword_tags[]: combine keywords and industry as an array of tags
+        // Split keywords by comma and append each as a separate array entry (snake_case key required)
+        const orgTagParts = [];
+        if (filters.keywords) {
+            const raw = String(filters.keywords);
+            raw.split(',').map(s => s.trim()).filter(Boolean).forEach(k => orgTagParts.push(k));
+        }
+        if (filters.industry) {
+            const i = String(filters.industry).trim();
+            if (i) orgTagParts.push(i);
+        }
+        if (orgTagParts.length > 0) {
+            orgTagParts.forEach(tag => {
+                params.append('q_organization_keyword_tags[]', tag);
+            });
+        }
+
         // Keep legacy/company specific params if needed
         if (filters.company && !params.has('qKeywords')) {
             params.set('organizationName', String(filters.company));

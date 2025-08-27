@@ -60,8 +60,15 @@
                         <input type="text" id="qbLocation" placeholder="es: Italy, Milan" />
                     </div>
                     <div class="query-row">
-                        <label>Employee Ranges (es: 51-100,101-200)</label>
-                        <input type="text" id="qbEmployeeRanges" placeholder="es: 51-100,101-200" />
+                        <label>Employee Ranges</label>
+                        <div class="employee-ranges">
+                            <label><input type="checkbox" class="qbEmployeeRange" value="1-10"> 1-10</label>
+                            <label><input type="checkbox" class="qbEmployeeRange" value="11-50"> 11-50</label>
+                            <label><input type="checkbox" class="qbEmployeeRange" value="51-200"> 51-200</label>
+                            <label><input type="checkbox" class="qbEmployeeRange" value="201-500"> 201-500</label>
+                            <label><input type="checkbox" class="qbEmployeeRange" value="501-1000"> 501-1000</label>
+                            <label><input type="checkbox" class="qbEmployeeRange" value="1001+"> 1001+</label>
+                        </div>
                     </div>
                     <div class="query-row">
                         <label>Preferenze</label>
@@ -260,10 +267,15 @@
                                 </select>
                             </th>
                             <th class="filter-cell">
-                                <div class="range-filter">
-                                    <input type="number" class="range-input" data-column="estimated_num_employees" data-type="min" placeholder="Min">
-                                    <input type="number" class="range-input" data-column="estimated_num_employees" data-type="max" placeholder="Max">
-                                </div>
+                                <select class="column-filter" data-column="estimated_num_employees">
+                                    <option value="">Tutti</option>
+                                    <option value="1-10">1-10</option>
+                                    <option value="11-50">11-50</option>
+                                    <option value="51-200">51-200</option>
+                                    <option value="201-500">201-500</option>
+                                    <option value="501-1000">501-1000</option>
+                                    <option value="1001+">1001+</option>
+                                </select>
                             </th>
                             <th class="filter-cell">
                                 <div class="range-filter">
