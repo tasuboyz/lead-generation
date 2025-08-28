@@ -37,14 +37,12 @@ const qbLocation = document.getElementById('qbLocation');
 // We'll read the employee range checkbox group by class (.qbEmployeeRange)
 const qbHasEmail = document.getElementById('qbHasEmail');
 const qbHasLinkedIn = document.getElementById('qbHasLinkedIn');
-const qbKeywords = document.getElementById('qbKeywords');
 const qbCompany = document.getElementById('qbCompany');
 const qbMinRevenue = document.getElementById('qbMinRevenue');
 const qbMaxRevenue = document.getElementById('qbMaxRevenue');
 const qbMarketSegments = document.getElementById('qbMarketSegments');
 const previewUrlBtn = document.getElementById('previewUrlBtn');
 const qbPreview = document.getElementById('qbPreview');
-const qbQKeywords = document.getElementById('qbQKeywords');
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -70,6 +68,13 @@ function initializeEventListeners() {
                 const url = window.buildApolloUrl(filters);
                 qbPreview.style.display = 'block';
                 qbPreview.textContent = url;
+                // Open Apollo in a new tab so the user can see the filters applied directly
+                try {
+                    window.open(url, '_blank');
+                } catch (err) {
+                    // If popup blocked, show a message
+                    showMessage('Impossibile aprire una nuova scheda. Copia l\'URL dall\'anteprima.', 'error');
+                }
             } else {
                 qbPreview.style.display = 'block';
                 qbPreview.textContent = 'URL builder non disponibile. Assicurati che src/urlBuilder.js sia caricato.';
@@ -1047,7 +1052,7 @@ function prepareExcelData() {
                     }
                     break;
                 case 'keywords':
-                    // Limit keywords length for better readability
+                    // Keep original keywords column handling (export only)
                     if (value && value.length > 200) {
                         value = value.substring(0, 200) + '...';
                     }
@@ -1224,9 +1229,7 @@ function readQueryBuilderFilters() {
         maxRevenue: qbMaxRevenue && qbMaxRevenue.value ? parseInt(qbMaxRevenue.value) : undefined,
         hasEmail: qbHasEmail ? qbHasEmail.checked : undefined,
         hasLinkedIn: qbHasLinkedIn ? qbHasLinkedIn.checked : undefined,
-        keywords: qbKeywords ? qbKeywords.value.trim() : '',
-        qKeywords: qbQKeywords ? qbQKeywords.value.trim() : '',
-        results: undefined,
+    results: undefined,
         employeeRanges,
     };
 }

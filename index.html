@@ -48,19 +48,41 @@
                 </label>
                 <div class="query-builder">
                     <div class="query-row">
-                        <label>Titoli (comma separated)</label>
-                        <input type="text" id="qbTitles" placeholder="es: IT Manager, CTO" />
+                        <label>
+                            <i class="fas fa-briefcase"></i>
+                            Titoli Lavorativi
+                        </label>
+                        <input type="text" id="qbTitles" placeholder="es: IT Manager, CTO, Head of Engineering" />
                     </div>
                     <div class="query-row">
-                        <label>Settore</label>
-                        <input type="text" id="qbIndustry" placeholder="es: Information Technology" />
+                        <label>
+                            <i class="fas fa-industry"></i>
+                            Settore <small>(categoria macro)</small>
+                        </label>
+                        <input type="text" id="qbIndustry" placeholder="es: Information Technology, Healthcare" />
                     </div>
                     <div class="query-row">
-                        <label>Località</label>
-                        <input type="text" id="qbLocation" placeholder="es: Italy, Milan" />
+                        <!-- Keywords removed as requested -->
                     </div>
                     <div class="query-row">
-                        <label>Employee Ranges</label>
+                        <label>
+                            <i class="fas fa-map-marker-alt"></i>
+                            Località
+                        </label>
+                        <input type="text" id="qbLocation" placeholder="es: Italy, Milan, Rome" />
+                    </div>
+                    <div class="query-row">
+                        <label>
+                            <i class="fas fa-search"></i>
+                            Azienda Specifica
+                        </label>
+                        <input type="text" id="qbCompany" placeholder="es: Microsoft Italia" />
+                    </div>
+                    <div class="query-row">
+                        <label>
+                            <i class="fas fa-users"></i>
+                            Dipendenti
+                        </label>
                         <div class="employee-ranges">
                             <label><input type="checkbox" class="qbEmployeeRange" value="1-10"> 1-10</label>
                             <label><input type="checkbox" class="qbEmployeeRange" value="11-50"> 11-50</label>
@@ -70,27 +92,30 @@
                             <label><input type="checkbox" class="qbEmployeeRange" value="1001+"> 1001+</label>
                         </div>
                     </div>
-                    <div class="query-row">
-                        <label>Preferenze</label>
-                        <label><input type="checkbox" id="qbHasEmail" /> Solo con Email</label>
-                        <label><input type="checkbox" id="qbHasLinkedIn" /> Solo con LinkedIn</label>
-                    </div>
-                    <div class="query-row">
-                        <label>Keywords</label>
-                        <input type="text" id="qbKeywords" placeholder="es: cloud, saas" />
-                    </div>
-                    <div class="query-row">
-                        <label>Azienda (Company)</label>
-                        <input type="text" id="qbCompany" placeholder="Nome azienda es: Acme Srl" />
-                    </div>
                     <div class="query-row range-row">
-                        <label>Fatturato Azienda (min / max €)</label>
+                        <label>
+                            <i class="fas fa-euro-sign"></i>
+                            Fatturato €
+                        </label>
                         <input type="number" id="qbMinRevenue" placeholder="Min €" />
                         <input type="number" id="qbMaxRevenue" placeholder="Max €" />
                     </div>
                     <div class="query-row">
-                        <label>Market Segments (comma separated)</label>
-                        <input type="text" id="qbMarketSegments" placeholder="es: fintech, healthcare" />
+                        <label>
+                            <i class="fas fa-chart-line"></i>
+                            Segmenti
+                        </label>
+                        <input type="text" id="qbMarketSegments" placeholder="es: fintech, e-commerce" />
+                    </div>
+                    <div class="query-row">
+                        <label>
+                            <i class="fas fa-cog"></i>
+                            Filtri
+                        </label>
+                        <div class="checkbox-group horizontal">
+                            <label><input type="checkbox" id="qbHasEmail" /> <i class="fas fa-envelope"></i> Email</label>
+                            <label><input type="checkbox" id="qbHasLinkedIn" /> <i class="fab fa-linkedin"></i> LinkedIn</label>
+                        </div>
                     </div>
                     <div class="query-actions">
                         <button id="previewUrlBtn" class="action-btn">
